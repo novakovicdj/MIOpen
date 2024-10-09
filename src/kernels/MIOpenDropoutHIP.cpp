@@ -107,23 +107,23 @@ __forceinline__ __device__ void dropout_kernel(const rocrand_state_xorwow* state
     F dat_blk[RD_BLCK];     // Register space to read the input data
     uchar is_kept[RD_BLCK]; // Register space to store the mask for the dropout
 
-    uint sid = threadIdx.x + blockIdx.x * blockDim.x;
+    auto sid = threadIdx.x + blockIdx.x * blockDim.x;
     rocrand_state_xorwow cur_state; // Read the state of the current thread
     cur_state = state[sid];
 
-    for(uint gid = threadIdx.x + blockIdx.x * blockDim.x; gid < total_work;
+    for(auto gid = threadIdx.x + blockIdx.x * blockDim.x; gid < total_work;
         gid += blockDim.x * gridDim.x)
     {
-        uint i0    = gid / (dim1 * dim2 * dim3 * dim4);
-        uint i1    = (gid / (dim2 * dim3 * dim4)) % dim1;
-        uint i2    = (gid / (dim3 * dim4)) % dim2;
-        uint i3    = (gid / dim4) % dim3;
-        uint i4    = gid % dim4;
-        uint i4_rd = i4 / RD_BLCK;
+        auto i0    = gid / (dim1 * dim2 * dim3 * dim4);
+        auto i1    = (gid / (dim2 * dim3 * dim4)) % dim1;
+        auto i2    = (gid / (dim3 * dim4)) % dim2;
+        auto i3    = (gid / dim4) % dim3;
+        auto i4    = gid % dim4;
+        auto i4_rd = i4 / RD_BLCK;
 
-        uint x_idx = i0 * in_str0 + i1 * in_str1 + i2 * in_str2 + i3 * in_str3 +
+        auto x_idx = i0 * in_str0 + i1 * in_str1 + i2 * in_str2 + i3 * in_str3 +
                      i4_rd * RD_BLCK; // Calculate the index of the input tensor
-        uint y_idx = i0 * out_str0 + i1 * out_str1 + i2 * out_str2 + i3 * out_str3 +
+        auto y_idx = i0 * out_str0 + i1 * out_str1 + i2 * out_str2 + i3 * out_str3 +
                      i4_rd * RD_BLCK; // Calculate the index of the output tensor
 
         *(reinterpret_cast<T*>(dat_blk)) = *(reinterpret_cast<const T*>(
@@ -132,7 +132,7 @@ __forceinline__ __device__ void dropout_kernel(const rocrand_state_xorwow* state
         if constexpr(!MASK) // If MASK is not enabled then generate the mask for dropout
         {
 #pragma unroll
-            for(uint i = 0; i < RD_BLCK; ++i)
+            for(auto i = 0; i < RD_BLCK; ++i)
             {
                 is_kept[i] =
                     static_cast<uchar>(prng::xorwow_uniform(&cur_state) >
@@ -154,7 +154,7 @@ __forceinline__ __device__ void dropout_kernel(const rocrand_state_xorwow* state
         }
 // Apply the mask to the data and scale it with the scale factor.
 #pragma unroll
-        for(uint i = 0; i < RD_BLCK; ++i)
+        for(auto i = 0; i < RD_BLCK; ++i)
         {
             dat_blk[i] = static_cast<bool>(is_kept[i]) ? dat_blk[i] * static_cast<F>(scale)
                                                        : static_cast<F>(0);
